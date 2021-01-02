@@ -1,0 +1,263 @@
+---
+title: "Advanced R Chapter 2"
+output: 
+  html_notebook: 
+    toc: yes
+    fig_caption: yes
+---
+
+
+Quiz 
+
+1. 
+```{r}
+df <- data.frame(runif(3), runif(3))
+names(df) <- c(1,2)
+df
+
+## Answer
+df$`3` <- df$`1` + df$`2`
+df
+```
+2.
+```{r}
+x <- runif(1e6)
+y <- list(x, x, x) ## y is 3 times the size of x
+
+```
+
+3.
+```{r}
+a <- c(3,5,7,9)
+
+b <- a
+
+b[[1]] <- 10
+
+```
+
+
+```{r}
+library(lobstr)
+```
+## Copy on Modify
+
+```{r}
+x <- c(1,2,3)
+obj_addr(x)
+
+y <- x
+obj_addr(y)
+
+z <- c(1,2,3)
+obj_addr(z)
+```
+
+Exercises
+
+```{r}
+obj_addr(mean)
+obj_addr(base::mean)
+
+obj_addr(get("mean"))
+
+obj_addr(evalq(mean))
+
+obj_addr(match.fun("mean"))
+```
+
+```{r}
+make.names(".2f")
+```
+
+##tracemem()
+
+```{r}
+x1 <- c(1,2,3)
+cat(tracemem(x), "\n")
+```
+```{r}
+y <- x
+y[[3]] <- 4L
+y[[3]] <- 5L ## This should not cause modification in the memory location. However, while viewing it within R studio it shows modification. If you try the same within a terminal it won't show any changes.
+```
+### Same goes with functions
+
+```{r}
+func <- function(a){
+  a
+}
+
+x2 <- c(1,2,3)
+cat(tracemem(x), "\n")
+
+z <- func(x)  ## There is no copy here. That is, copy-on-modify
+```
+
+## Lists
+```{r}
+l1 <- list(1,2,3)
+cat(tracemem(l1), "\n")
+
+l2 <- l1 ## No copy here
+l2[[3]] <- 4 ## Here is the modification. Hence, copy-on-modify
+
+```
+R 3.1.0 onward does a shallow copy. That is, when you make a copy of the list, each element is individually referenced by the new name. Upon modification, only the modified element is modified while the rest others are still being referenced to the original list.
+
+### lobstr::ref()
+
+```{r}
+
+ref(l1, l2)
+```
+As shown above, the elements 1 and 2 of the l1 and l2 lists are located at the same memory location. Only the element 3 has been modified.
+
+## Dataframes
+
+Data frames are list of vectors. 
+```{r}
+d1 <- data.frame(x = c(1,2,3), y = c(4,5,6))
+d2 <- d1
+
+d2[,2] <- d2[,2] * 2
+ref(d1, d2)
+```
+As seen above, only the column y (2nd column) now has a newer address. The first column still points to the d1 memory address.
+
+If you modify a column, only that column needs to be modified, the others will still point to their original references. 
+However, if you modify a row , every column is modified, which means every column must be copied.
+
+```{r}
+d3 <- d1
+
+d3[1, ] <- d3[1, ] * 3
+
+ref(d1, d3)
+
+```
+As sen here, both column have been modified and occupy different memory locations.
+
+## Charcter vectors
+
+Global string pool
+
+```{r}
+x3 <- c("a", "bc", "cd", "a", "efg")
+
+ref(x3, character = T)
+
+```
+
+## Exercises
+
+```{r}
+tracemem(1:10)
+
+x <- c(1,2,3)
+tracemem(x)
+x[[3]] <- 4
+
+ref(x)
+
+##3
+a <- 1:10
+b <- list(a,a)
+ref(a,b)
+
+c <- list(b, a, 1:10)
+ref(c, b, a)
+
+x <- list(1:10)
+tracemem(x)
+
+x[[2]] <- x
+ref(x)
+
+```
+## 2.4 Object size
+
+```{r}
+x <- runif(1e6)
+obj_size(x)
+
+y <- list(x,x,x)
+obj_size(y) - obj_size(x)
+
+```
+y is only 80 bytes bigger than x. THat is in fact the size of an empty list with 3 elements
+
+```{r}
+obj_size(list(NULL, NULL, NULL))
+```
+
+## Modify-in-place
+
+```{r}
+x <- data.frame(matrix(runif(5 * 1e4), ncol = 5))
+
+medians <- vapply(x, median, numeric(1))
+```
+
+```{r}
+cat(tracemem(x), "\n")
+
+for (i in seq_along(medians)) {
+  x[[i]] <- x[[i]] - medians[[i]]
+}
+```
+
+
+A more optimized way would be as follows:
+
+```{r}
+y <- as.list(x)
+
+cat(tracemem(y), "\n")
+
+for (i in 1:5) {
+  y[[i]] <- y[[i]] - medians[[i]]
+}
+```
+## Environments
+
+```{r}
+e1 <- rlang::env(a = 1, b = 2, c = 3)
+tracemem(e1)
+e2 <- e1
+
+e1$c <- 4
+e2$c  ## Since environments are modified in place e2$c gets the modified value of c
+```
+## Exercises
+1. 
+```{r}
+x <- list()
+x
+
+cat(tracemem(x), "\n")
+
+x[[1]] <- x
+
+x
+```
+2. 
+```{r}
+library(microbenchmark)
+
+microbenchmark(for (i in seq_along(medians)) {
+  x[[i]] <- x[[i]] - medians[[i]]
+},
+for (i in 1:5) {
+  y[[i]] <- y[[i]] - medians[[i]]
+})
+```
+
+
+
+
+
+
+
+
+
