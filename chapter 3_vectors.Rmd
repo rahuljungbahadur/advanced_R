@@ -1,0 +1,94 @@
+---
+title: "chapter 3 vectors"
+output: html_notebook
+---
+
+```{r}
+as.character(2)
+"one" < 4
+
+"1" == 1
+
+"4" < c(1:10)
+
+is.vector()
+```
+```{r}
+x1 <- c(1:6)
+tracemem(x1)
+
+y1 <- x1
+dim(x1) <- c(3,2)
+x1
+
+is.matrix(x1)
+is.vector(y1)
+
+x2 <- array(1:6)
+x1 == x2
+tracemem(x2)
+x2
+t(x2)
+```
+
+```{r}
+setNames()
+
+x3 <- array(1:5, c(5,1,1))
+x3
+```
+Factor is actually a vector of type integer.
+It has 2 attributes -> levels and class
+
+```{r}
+fac1 <- factor(c("b", "a", "c", "b", "c"), levels = c("a", "b", "c"))
+typeof(fac1)  ## returns integer
+
+attributes(fac1)
+```
+Date is a vector of Double type. It stores the days since 1970-01-01.
+
+```{r}
+d1 <- Sys.Date()
+typeof(d1)
+attributes(d1)
+unclass(d1) 
+
+## Similarly
+d2 <- as.Date("1970-02-01")
+attributes(d2)
+unclass(d2)  ## Returns 31
+
+```
+
+
+## 3.4.5 Exercises
+
+1. 
+```{r}
+tab1 <- table(fac1)
+tab1
+typeof(tab1) ## The table is of type integer
+attributes(tab1) ## It has 3 attributes -> 1. dim, 2. dimnames, 3. class
+
+unclass(tab1)
+```
+
+2. modifying factor levels
+
+```{r}
+f1 <- factor(letters)
+f1
+levels(f1) <- rev(levels(f1))
+f1
+```
+
+```{r}
+f2 <- rev(factor(letters))
+f3 <- factor(letters, levels = rev(letters))
+f2
+f3
+```
+
+
+
